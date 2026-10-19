@@ -1,0 +1,207 @@
+const express = require("express");
+const Fisheries = require("../models/Fisheries");
+
+const router = express.Router();
+
+
+/* GET ALL */
+router.get("/", async (req, res) => {
+
+    try {
+
+        const data =
+            await Fisheries.find();
+
+        res.json(data);
+
+    } catch (error) {
+
+        res.status(500).json({
+            message: error.message
+        });
+
+    }
+
+});
+
+
+/* ADD */
+router.post("/", async (req, res) => {
+
+    try {
+
+        const existing =
+            await Fisheries.findOne({
+                species: req.body.species,
+                location: req.body.location,
+                year: Number(req.body.year)
+            });
+
+
+        if (existing) {
+
+            return res.status(409).json({
+                message:
+                    "A fisheries record for this species, location and year already exists."
+            });
+
+        }
+
+
+        const record =
+            new Fisheries({
+
+                species:
+                    req.body.species,
+
+                location:
+                    req.body.location,
+
+                production:
+                    Number(req.body.production),
+
+                year:
+                    Number(req.body.year)
+
+            });
+
+
+        const saved =
+            await record.save();
+
+
+        res.status(201).json(saved);
+
+    } catch (error) {
+
+        res.status(400).json({
+            message: error.message
+        });
+
+    }
+
+});
+
+
+/* UPDATE */
+router.put("/:id", async (req, res) => {
+
+    try {
+
+        const duplicate =
+            await Fisheries.findOne({
+
+                species:
+                    req.body.species,
+
+                location:
+                    req.body.location,
+
+                year:
+                    Number(req.body.year),
+
+                _id: {
+                    $ne: req.params.id
+                }
+
+            });
+
+
+        if (duplicate) {
+
+            return res.status(409).json({
+                message:
+                    "Another fisheries record with the same species, location and year already exists."
+            });
+
+        }
+
+
+        const updated =
+            await Fisheries.findByIdAndUpdate(
+
+                req.params.id,
+
+                {
+                    species:
+                        req.body.species,
+
+                    location:
+                        req.body.location,
+
+                    production:
+                        Number(req.body.production),
+
+                    year:
+                        Number(req.body.year)
+                },
+
+                {
+                    new: true,
+                    runValidators: true
+                }
+
+            );
+
+
+        if (!updated) {
+
+            return res.status(404).json({
+                message:
+                    "Fisheries record not found."
+            });
+
+        }
+
+
+        res.json(updated);
+
+    } catch (error) {
+
+        res.status(400).json({
+            message: error.message
+        });
+
+    }
+
+});
+
+
+/* DELETE */
+router.delete("/:id", async (req, res) => {
+
+    try {
+
+        const deleted =
+            await Fisheries.findByIdAndDelete(
+                req.params.id
+            );
+
+
+        if (!deleted) {
+
+            return res.status(404).json({
+                message:
+                    "Fisheries record not found."
+            });
+
+        }
+
+
+        res.json({
+            message:
+                "Fisheries record deleted successfully."
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            message: error.message
+        });
+
+    }
+
+});
+
+
+module.exports = router;
